@@ -1,7 +1,6 @@
 const cron = require('node-cron')
 const Logger = require('le_node')
-const Promise = require('bluebird');
-const fs = Promise.promisifyAll(require('fs'));
+const fs = require('fs');
 const {exec} = require('child_process');
 const formatter = require('dateformat')
 
@@ -23,8 +22,8 @@ cron.schedule(CRON_TIME, async () => {
 async function runPgDump() {
     var formattedDate = formatter(new Date(), "dd-mm-yyyy_HH_MM_ss")
     exec(
-        `pg_dump -c ${DB_URL}`, {maxBuffer: 67108864}, // 64 MB
-        function (err, data, stderr) {
+        `pg_dump -c ${DB_URL}`, {maxBuffer: 1024 * 1024 * 256}, // 256 MB
+        function (err, data) {
             if (err) {
                 console.log(`Backup failed at ${formattedDate}`)
                 console.log(err)
@@ -47,8 +46,7 @@ async function runPgDump() {
 
 async function clearDir() {
     var files = await fs.readdirAsync(BACKUP_DIR)
-    let count = files.length
-    if (count >= MAX_BACKUPS) {
+    if (files.length >= MAX_BACKUPS) {
         fs.unlink(`${BACKUP_DIR}/${files[0]}`, (err) => {
             console.log(err)
         })
