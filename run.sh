@@ -26,14 +26,21 @@ rm -f /backup.sh
 cat <<EOF >> /backup.sh
 #!/bin/bash
 MAX_BACKUPS=${MAX_BACKUPS}
-BACKUP_NAME=\$(date +%d-%m-%Y_%H_%M_%S).sql
+SLACK=${SLACK_WEBHOOK}
+BACKUP_NAME=dump_\$(date +%d-%m-%Y_%H_%M_%S).sql
 export PGPASSWORD="${POSTGRES_PASSWORD}"
 echo "=> Backup started: \${BACKUP_NAME}"
 if ${BACKUP_CMD} ;then
     echo "   Backup succeeded"
+    if [ -n "\${SLACK}" ]; then
+      curl -X POST --data-urlencode "payload={\"username\": \"Backup BOT\", \"text\": \"*HA MAINTENANCE* - database backup succeded: file=*\${BACKUP_NAME}*\",}" \${SLACK}
+    fi
 else
     echo "   Backup failed"
     rm -rf /backup/\${BACKUP_NAME}
+    if [ -n "\${SLACK}" ]; then
+      curl -X POST --data-urlencode "payload={\"username\": \"Backup BOT\", \"text\": \"*HA MAINTENANCE* - database backup failed\",}" \${SLACK}
+    fi
 fi
 if [ -n "\${MAX_BACKUPS}" ]; then
     while [ \$(ls /backup -N1 | wc -l) -gt \${MAX_BACKUPS} ];
