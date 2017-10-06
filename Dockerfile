@@ -1,11 +1,14 @@
-FROM postgres:9.6.3
+FROM postgres:9.6.3-alpine
 
-RUN apt-get update && \
-    apt-get install -y wget curl netcat cron && \
-    mkdir /backup
+RUN apk add --update curl wget && \
+    rm -rf /var/cache/apk/* && \
+    mkdir /backup && \
+    mkdir /_failed
+
+VOLUME ["/backup"]
+VOLUME ["/_failed"]
 
 ADD run.sh /run.sh
 RUN chmod +x /run.sh
-VOLUME ["/backup"]
 
 CMD ["/run.sh"]
